@@ -1,7 +1,16 @@
 {
-    "version": "0.1.0",
+    "version": "0.1.1",
     "build_date": "2025-11-21",
     "changelog": [
+        {
+            "version": "0.1.1",
+            "date": "2025-11-21",
+            "changes": [
+                "Added Settings Page with Version Info and Changelog",
+                "Added Auto-Update Check",
+                "Fixed Light Mode UI issues"
+            ]
+        },
         {
             "version": "0.1.0",
             "date": "2025-11-21",

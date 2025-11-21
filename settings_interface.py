@@ -43,6 +43,10 @@ class SettingsInterface(ScrollArea):
         self.setWidget(self.scrollWidget)
         self.setWidgetResizable(True)
         
+        # Set transparent background to fix Light mode issue
+        self.scrollWidget.setStyleSheet("QWidget{background-color: transparent;}")
+        self.setStyleSheet("QScrollArea{background-color: transparent; border: none;}")
+        
         self.expandLayout.setSpacing(28)
         self.expandLayout.setContentsMargins(36, 10, 36, 0)
         
