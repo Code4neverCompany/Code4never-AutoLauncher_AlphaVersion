@@ -1,0 +1,15 @@
+# Autolauncher - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# PySide6 - Qt6 bindings for Python (cross-platform GUI framework)
+PySide6>=6.5.0
+
+# PySide6-Fluent-Widgets - Microsoft Fluent Design widgets library
+PySide6-Fluent-Widgets>=1.7.0
+
+# APScheduler - Advanced Python Scheduler for task scheduling
+APScheduler>=3.10.0
+
+# Optional: PyInstaller for creating standalone executables
+# Uncomment the line below if you want to package the application
+# pyinstaller>=5.13.0
