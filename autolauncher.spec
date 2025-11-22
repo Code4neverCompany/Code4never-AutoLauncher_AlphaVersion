@@ -12,21 +12,25 @@ block_cipher = None
 # Collect all qfluentwidgets data files
 qfluentwidgets_datas = collect_data_files('qfluentwidgets')
 
-# Collect all asset files explicitly
+# Build explicit list of data files as TOC tuples (source, dest)
 import glob
-asset_files = []
-for file in glob.glob('assets/**/*', recursive=True):
-    if os.path.isfile(file):
-        # Keep directory structure
-        asset_files.append((file, os.path.dirname(file)))
+added_files = []
 
-# Define data files to include
-added_files = [
-    ('data/*.json', 'data'), # Include existing JSON data files
-    ('version_info.json', '.'), # Include version info in root
-] + asset_files
+# Add version_info.json to root of application
+added_files.append(('version_info.json', '.'))
 
-# Combine all data files
+# Add all assets - use explicit file paths
+for asset_file in glob.glob('assets/**/*', recursive=True):
+    if os.path.isfile(asset_file):
+        # Source path, destination directory
+        added_files.append((asset_file, os.path.dirname(asset_file)))
+
+# Add data directory JSON files
+for data_file in glob.glob('data/*.json'):
+    if os.path.isfile(data_file):
+        added_files.append((data_file, 'data'))
+
+# Combine all data files  
 all_datas = added_files + qfluentwidgets_datas
 
 # Hidden imports for PyQt5 and qfluentwidgets
