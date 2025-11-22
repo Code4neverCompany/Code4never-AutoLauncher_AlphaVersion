@@ -148,9 +148,8 @@ def create_release_package():
     release_dir = Path("release")
     release_dir.mkdir(exist_ok=True)
     
-    # Generate package name with timestamp
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    zip_name = f"Autolauncher_v1.0.0_{timestamp}.zip"
+    # Generate package name (version only, no timestamp)
+    zip_name = f"Autolauncher_v1.0.0.zip"
     zip_path = release_dir / zip_name
     
     print_info(f"Creating package: {zip_path}")

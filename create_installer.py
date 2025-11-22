@@ -59,7 +59,9 @@ def create_installer():
         # Move the setup exe to release folder
         dist_setup = Path("dist/Autolauncher_Setup.exe")
         if dist_setup.exists():
-            target_name = f"Autolauncher_Setup_{latest_zip.stem.replace('Autolauncher_', '')}.exe"
+            # Extract version from zip name (e.g., Autolauncher_v1.0.0.zip -> v1.0.0)
+            version_part = latest_zip.stem.replace('Autolauncher_', '')
+            target_name = f"Autolauncher_Setup_{version_part}.exe"
             target_path = release_dir / target_name
             shutil.move(str(dist_setup), str(target_path))
             print(f"Installer created: {target_path}")
