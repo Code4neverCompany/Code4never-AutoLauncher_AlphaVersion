@@ -108,7 +108,7 @@ class SettingsInterface(ScrollArea):
         self.autoUpdateCard = SettingCard(
             FluentIcon.UPDATE,
             "Auto-Update Check",
-            "Choose how often the app should check for updates",
+            "Choose how often the app should check for updates (visit About page to check manually)",
             parent=self.updatesGroup
         )
         
@@ -126,18 +126,6 @@ class SettingsInterface(ScrollArea):
         self.updateFrequencyComboBox.currentIndexChanged.connect(self._on_update_frequency_changed)
         
         self.updatesGroup.addSettingCard(self.autoUpdateCard)
-        
-        # Check for Updates Now Button
-        self.checkUpdateCard = PrimaryPushSettingCard(
-            "Check Now",
-            FluentIcon.SYNC,
-            "Manual Update Check",
-            "Check for the latest version immediately",
-            parent=self.updatesGroup
-        )
-        self.checkUpdateCard.clicked.connect(self._on_check_updates_now)
-        self.updatesGroup.addSettingCard(self.checkUpdateCard)
-
 
         
         # Add groups to layout
@@ -184,63 +172,4 @@ class SettingsInterface(ScrollArea):
                 duration=2000,
                 parent=self
             )
-    
-    def _on_check_updates_now(self):
-        """Handle manual update check request."""
-        # Import here to avoid circular dependency
-        from update_manager import UpdateManager
-        
-        update_manager = UpdateManager()
-        
-        # Show checking status
-        InfoBar.info(
-            title="Checking for Updates",
-            content="Please wait...",
-            orient=Qt.Horizontal,
-            isClosable=False,
-            position=InfoBarPosition.TOP_RIGHT,
-            duration=2000,
-            parent=self
-        )
-        
-        # Perform the check
-        update_info, error = update_manager.check_for_updates()
-        update_manager.save_last_check_time(
-            "update_available" if update_info else ("error" if error else "no_update"),
-            update_info.get('version') if update_info else None
-        )
-        
-        if error:
-            InfoBar.error(
-                title="Update Check Failed",
-                content=f"{error}",
-                orient=Qt.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP_RIGHT,
-                duration=5000,
-                parent=self
-            )
-        elif update_info:
-            # Notify parent window about available update
-            if hasattr(self.parent(), '_handle_update_available'):
-                self.parent()._handle_update_available(update_info)
-            else:
-                InfoBar.success(
-                    title="Update Available",
-                    content=f"Version {update_info['version']} is available!",
-                    orient=Qt.Horizontal,
-                    isClosable=True,
-                    position=InfoBarPosition.TOP_RIGHT,
-                    duration=5000,
-                    parent=self
-                )
-        else:
-            InfoBar.success(
-                title="No Updates",
-                content="You're running the latest version!",
-                orient=Qt.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP_RIGHT,
-                duration=3000,
-                parent=self
-            )
+

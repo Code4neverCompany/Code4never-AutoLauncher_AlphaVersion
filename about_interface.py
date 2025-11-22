@@ -5,8 +5,8 @@ Displays application version information, changelog, and update controls.
 © 2025 4never Company. All rights reserved.
 """
 
-from PySide6.QtCore import Qt, Signal, QThread
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QApplication
+from PyQt5.QtCore import Qt, pyqtSignal as Signal, QThread
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QApplication
 from qfluentwidgets import (
     ScrollArea,
     SettingCardGroup,

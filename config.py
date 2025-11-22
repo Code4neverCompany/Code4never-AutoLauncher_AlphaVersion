@@ -8,8 +8,8 @@ import os
 from pathlib import Path
 
 # Application Information
-APP_NAME = "Autolauncher"
-APP_VERSION = "1.0.0"
+APP_NAME = "c4n-AutoLauncher"
+APP_VERSION = "1.0.1"
 APP_AUTHOR = "Code4never"
 
 # Directories

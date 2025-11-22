@@ -37,6 +37,7 @@ from task_manager import TaskManager, SettingsManager
 from task_dialog import TaskDialog
 from scheduler import TaskScheduler
 from settings_interface import SettingsInterface
+from about_interface import AboutInterface
 from update_manager import UpdateManager
 from logger import get_logger
 from config import (
@@ -174,43 +175,48 @@ class AutolauncherApp(FluentWindow):
             self.update_manager.open_download_page(update_info['url'])
             return
         
-        # For executable mode, automatically download
+        # For executable mode, show notification with action to navigate to About page
         exe_asset = update_info.get('exe_asset')
         if not exe_asset:
             logger.warning("No .exe asset found in release")
-            return
-        
-        # Start automatic download
-        logger.info("Starting automatic update download...")
-        self.pending_update_info = update_info
-        
-        # Show download notification
-        InfoBar.info(
-            title=f"Downloading Update v{version}",
-            content="Download in progress...",
-            orient=Qt.Horizontal,
-            isClosable=False,
-            position=InfoBarPosition.TOP,
-            duration=5000,
-            parent=self
-        )
-        
-        # Perform download in background (simplified - in production use QThread)
-        download_path = self.update_manager.download_update(exe_asset)
-        
-        if download_path:
-            self.pending_update_path = download_path
-            self._handle_download_complete(version)
-        else:
-            InfoBar.error(
-                title="Download Failed",
-                content="Could not download update. Please try again later.",
+            # Still show notification to inform user
+            info_bar = InfoBar.info(
+                title=f"Update Available: v{version}",
+                content="Visit the About page to learn more",
                 orient=Qt.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
-                duration=5000,
+                duration=-1,  # Persistent
                 parent=self
             )
+            # Add action button to navigate to About page
+            info_bar.addWidget(PushButton("View Details"))
+            info_bar.widget.clicked.connect(lambda: self.stackedWidget.setCurrentWidget(self.aboutInterface))
+            return
+        
+        # Show prominent notification with action to view in About page
+        info_bar = InfoBar.success(
+            title=f"Update Available: v{version}",
+            content="A new version is ready to download. Click 'View Details' to install.",
+            orient=Qt.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=-1,  # Persistent until clicked
+            parent=self
+        )
+        
+        # Add action button to navigate to About page
+        view_button = PushButton("View Details")
+        view_button.clicked.connect(lambda: self._navigate_to_about_for_update())
+        info_bar.addWidget(view_button)
+        
+        logger.info(f"Showed update notification for v{version}")
+    
+    def _navigate_to_about_for_update(self):
+        """Navigate to the About page (helper for update notifications)."""
+        self.stackedWidget.setCurrentWidget(self.aboutInterface)
+        logger.debug("Navigated to About page for update")
+
     
     def _handle_download_complete(self, version: str):
         """Handle when update download completes."""
@@ -312,6 +318,9 @@ class AutolauncherApp(FluentWindow):
         # Create settings interface
         self.settingsInterface = SettingsInterface(self)
         
+        # Create about interface
+        self.aboutInterface = AboutInterface(self)
+        
         self._create_navigation()
         
         logger.debug("UI initialized")
@@ -327,6 +336,13 @@ class AutolauncherApp(FluentWindow):
             self.mainWidget,
             FluentIcon.CALENDAR,
             "Tasks"
+        )
+        
+        self.addSubInterface(
+            self.aboutInterface,
+            FluentIcon.INFO,
+            "About",
+            position=NavigationItemPosition.BOTTOM
         )
         
         self.addSubInterface(

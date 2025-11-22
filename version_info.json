@@ -1,7 +1,19 @@
 {
-    "version": "1.0.0",
+    "version": "1.0.1",
     "build_date": "2025-11-22",
     "changelog": [
+        {
+            "version": "1.0.1",
+            "date": "2025-11-22",
+            "changes": [
+                "Migrated Update System to About Section",
+                "Added Enhanced Update Notifications with Clickable Actions",
+                "Fixed PyQt5 Compatibility in About Interface",
+                "Removed Duplicate Update Controls from Settings",
+                "Renamed Application to c4n-AutoLauncher",
+                "Improved User Experience for Update Discovery"
+            ]
+        },
         {
             "version": "1.0.0",
             "date": "2025-11-22",
