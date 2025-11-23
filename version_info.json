@@ -1,7 +1,23 @@
 {
-    "version": "1.0.5",
+    "version": "1.0.6",
     "build_date": "2025-11-23",
     "changelog": [
+        {
+            "version": "1.0.6",
+            "date": "2025-11-23",
+            "changes": [
+                "Feature: Pause/Resume Tasks with visual status indicator",
+                "Feature: Live Countdown Timers for all scheduled tasks",
+                "Feature: Date Format Options (YYYY-MM-DD, DD.MM.YYYY, MM/DD/YYYY, DD-MM-YYYY)",
+                "Feature: Execution Log with comprehensive event tracking",
+                "UI: Icons now inline with task names (removed separate column)",
+                "UI: Theme-aware text colors",
+                "UI: Fixed Settings label truncation",
+                "Fix: Task selection preserved after pause/resume",
+                "Fix: Daily task countdown calculation",
+                "Fix: .lnk shortcut icon extraction"
+            ]
+        },
         {
             "version": "1.0.5",
             "date": "2025-11-23",
@@ -45,7 +61,7 @@
         },
         {
             "version": "1.0.1",
-            "date": "2025-11-22",
+            "date": "2025-11-23",
             "changes": [
                 "Migrated Update System to About Section",
                 "Added Enhanced Update Notifications with Clickable Actions",
