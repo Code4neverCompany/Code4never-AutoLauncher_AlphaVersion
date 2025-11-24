@@ -163,6 +163,34 @@ class AutolauncherApp(FluentWindow):
         # Update the About interface dashboard
         if hasattr(self, 'aboutInterface') and hasattr(self.aboutInterface, 'dashboard'):
             self.aboutInterface.dashboard.show_update_available(update_info)
+            
+        # Smart Auto-Update Logic
+        frequency = self.settings_manager.get('auto_update_frequency', 'startup')
+        if frequency == 'automatic' and self.update_manager.is_executable:
+            next_run = self.scheduler.get_next_run_time()
+            should_install = True
+            
+            if next_run:
+                now = datetime.now(next_run.tzinfo) if next_run.tzinfo else datetime.now()
+                delta = next_run - now
+                
+                if delta.total_seconds() < 1800: 
+                    should_install = False
+                    logger.info(f"Smart Update: Postponed. Next task in {delta.total_seconds()/60:.1f} mins")
+            
+            if should_install:
+                logger.info("Smart Update: Safe window detected. Starting automatic update...")
+                InfoBar.success(
+                    title="Smart Update",
+                    content="Installing update automatically (no conflicting tasks)...",
+                    orient=Qt.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.TOP,
+                    duration=3000,
+                    parent=self
+                )
+                self.aboutInterface._start_update_flow()
+                return
         
         # For Python script mode, just show notification and open browser
         if not self.update_manager.is_executable:
@@ -450,11 +478,16 @@ class AutolauncherApp(FluentWindow):
         
         # Set column resize modes
         header = self.taskTable.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)  # Task Name
-        header.setSectionResizeMode(1, QHeaderView.Stretch)           # Program Path
-        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Schedule
-        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)  # Countdown
-        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)  # Status
+        header.setSectionResizeMode(QHeaderView.Interactive)
+        
+        # Set default column widths
+        self.taskTable.setColumnWidth(0, 150)  # Task Name
+        self.taskTable.setColumnWidth(1, 300)  # Program Path
+        self.taskTable.setColumnWidth(2, 180)  # Schedule
+        self.taskTable.setColumnWidth(3, 120)  # Countdown
+        self.taskTable.setColumnWidth(4, 100)  # Status
+        
+        header.setStretchLastSection(True)
         
         # Add toolbar and table to main layout
         self.mainLayout.addWidget(self.toolbar)

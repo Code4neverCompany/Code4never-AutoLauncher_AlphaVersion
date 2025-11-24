@@ -1,7 +1,18 @@
 {
-    "version": "1.0.6",
-    "build_date": "2025-11-23",
+    "version": "1.0.7",
+    "build_date": "2025-11-24",
     "changelog": [
+        {
+            "version": "1.0.7",
+            "date": "2025-11-24",
+            "changes": [
+                "Feature: Smart Auto-Update - Installs updates only when no tasks scheduled within 30 minutes",
+                "UI: Interactive column resizing - Users can now adjust table column widths",
+                "UI: Clearer column separation for Schedule and Countdown",
+                "UI: Updated About section disclaimer to be Autolauncher-specific",
+                "Fix: Added scheduler method for smart update scheduling"
+            ]
+        },
         {
             "version": "1.0.6",
             "date": "2025-11-23",
@@ -61,7 +72,7 @@
         },
         {
             "version": "1.0.1",
-            "date": "2025-11-23",
+            "date": "2025-11-22",
             "changes": [
                 "Migrated Update System to About Section",
                 "Added Enhanced Update Notifications with Clickable Actions",

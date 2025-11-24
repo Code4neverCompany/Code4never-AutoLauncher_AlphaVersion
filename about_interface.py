@@ -456,8 +456,8 @@ class AboutInterface(ScrollArea):
         # --- Footer / Disclaimer ---
         self.footerLabel = BodyLabel(
             "This software is free and open source. If you paid for it, please request a refund immediately.\n"
-            "This software is for personal use only, for learning Python programming, computer vision, and UI automation. Do not use it for any profit-making or commercial purposes.\n"
-            "Using this software may result in account bans. Please use at your own risk.",
+            "Autolauncher is a task scheduling utility designed to automate application launches.\n"
+            "The developers are not responsible for any issues arising from the use of this software or the programs it launches.",
             self.scrollWidget
         )
         self.footerLabel.setTextColor(QColor(255, 80, 80), QColor(255, 80, 80)) # Red color as in reference

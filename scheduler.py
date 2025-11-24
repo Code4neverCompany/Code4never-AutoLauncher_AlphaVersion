@@ -323,3 +323,24 @@ class TaskScheduler(QObject):
             True if any tasks are executing, False otherwise
         """
         return len(self.active_processes) > 0
+
+    def get_next_run_time(self, task_id: int = None) -> Optional[datetime]:
+        """
+        Get the next run time.
+        If task_id is provided, returns next run time for that task.
+        If task_id is None, returns the earliest next run time of any job.
+        """
+        if task_id is not None:
+            job_id = f"task_{task_id}"
+            job = self.scheduler.get_job(job_id)
+            return job.next_run_time if job else None
+            
+        jobs = self.scheduler.get_jobs()
+        if not jobs:
+            return None
+            
+        next_times = [job.next_run_time for job in jobs if job.next_run_time]
+        if not next_times:
+            return None
+            
+        return min(next_times)
