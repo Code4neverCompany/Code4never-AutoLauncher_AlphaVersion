@@ -512,8 +512,21 @@ class AutolauncherApp(FluentWindow):
         self.taskTable.setRowCount(len(tasks))
         
         for row, task in enumerate(tasks):
-            # Task Name
-            self.taskTable.setItem(row, 0, QTableWidgetItem(task.get('name', '')))
+            # Task Name with Icon
+            task_name = task.get('name', '')
+            name_item = QTableWidgetItem(task_name)
+            
+            # Try to load and set icon
+            try:
+                from icon_extractor import extract_icon_from_path
+                program_path = task.get('program_path', '')
+                icon_path = extract_icon_from_path(program_path)
+                if icon_path and os.path.exists(icon_path):
+                    name_item.setIcon(QIcon(icon_path))
+            except Exception as e:
+                logger.debug(f"Could not load icon for task: {e}")
+            
+            self.taskTable.setItem(row, 0, name_item)
             
             # Program Path
             self.taskTable.setItem(row, 1, QTableWidgetItem(task.get('program_path', '')))
@@ -566,7 +579,7 @@ class AutolauncherApp(FluentWindow):
                 now = datetime.now()
                 if schedule_time <= now and task.get('recurrence', 'Once') == 'Once':
                     return "Expired"
-                return "Not Scheduled"
+                return "Paused"
             
             # Calculate delta using timezone-naive datetimes if needed
             now = datetime.now(next_run.tzinfo)
