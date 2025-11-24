@@ -580,7 +580,8 @@ class AboutInterface(ScrollArea):
         
         # Trigger install
         if self.update_manager.install_update_and_restart(download_path):
-            QApplication.quit()
+            # Give the batch script time to start before quitting
+            QTimer.singleShot(1000, QApplication.quit)
         else:
             InfoBar.error(
                 title="Installation Failed",

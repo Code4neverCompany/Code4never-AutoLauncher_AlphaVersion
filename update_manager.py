@@ -479,12 +479,18 @@ class UpdateManager:
         try:
             if not self.is_executable:
                 logger.warning("Cannot auto-update when running as Python script")
+                logger.info("Please manually download and run the update from GitHub")
                 return False
             
             current_exe = sys.executable
             install_dir = os.path.dirname(current_exe)
             logger.info(f"Install directory: {install_dir}")
             logger.info(f"Update package: {zip_path}")
+            
+            # Verify ZIP file exists
+            if not os.path.exists(zip_path):
+                logger.error(f"Update package not found: {zip_path}")
+                return False
             
             # Extract ZIP to a temp folder
             temp_extract_dir = os.path.join(os.path.dirname(zip_path), "extracted")
@@ -494,50 +500,91 @@ class UpdateManager:
             with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                 zip_ref.extractall(temp_extract_dir)
                 
-            # The zip contains a folder 'Autolauncher', we need the contents of that folder
-            # Or if the zip structure changed, we need to be adaptive.
-            # Based on build_exe.py, it has 'Autolauncher' as root.
+            # The zip contains a folder 'c4n-AutoLauncher' or 'Autolauncher', find it
+            extracted_contents = os.listdir(temp_extract_dir)
+            source_dir = None
             
-            source_dir = os.path.join(temp_extract_dir, "Autolauncher")
-            if not os.path.exists(source_dir):
-                # Fallback: maybe it was zipped without root folder?
+            for item in extracted_contents:
+                item_path = os.path.join(temp_extract_dir, item)
+                if os.path.isdir(item_path) and ('autolauncher' in item.lower() or 'c4n' in item.lower()):
+                    source_dir = item_path
+                    break
+            
+            if not source_dir:
+                # Fallback: use temp dir directly if no subfolder found
                 source_dir = temp_extract_dir
             
             logger.info(f"Source directory for update: {source_dir}")
             
-            # Create a batch script to replace the files and restart
+            # Verify source directory has expected files
+            if not os.path.exists(os.path.join(source_dir, os.path.basename(current_exe))):
+                logger.error("Update package does not contain the application executable")
+                return False
+            
+            # Create a robust batch script with better error handling
             batch_content = f"""@echo off
-echo Updating Autolauncher...
-timeout /t 2 /nobreak >nul
-echo Copying new files...
-xcopy "{source_dir}" "{install_dir}" /E /H /Y /I
+echo ========================================
+echo   c4n-AutoLauncher Update Installer
+echo ========================================
+echo.
+echo Waiting for application to close...
+timeout /t 3 /nobreak >nul
+
+echo Backing up current version...
+if exist "{install_dir}\\backup" rd /s /q "{install_dir}\\backup"
+mkdir "{install_dir}\\backup"
+xcopy "{install_dir}\\*.exe" "{install_dir}\\backup\\" /Y >nul 2>&1
+
+echo Installing update...
+xcopy "{source_dir}" "{install_dir}" /E /H /Y /I /R
+
 if errorlevel 1 (
-    echo Update failed!
+    echo.
+    echo ERROR: Update installation failed!
+    echo Attempting to restore backup...
+    xcopy "{install_dir}\\backup\\*.exe" "{install_dir}\\" /Y >nul
+    echo.
+    echo Please download and install the update manually from GitHub.
     pause
     exit /b 1
 )
-echo Update complete! Restarting...
+
+echo Update installed successfully!
+echo.
+echo Cleaning up...
+rd /s /q "{temp_extract_dir}"
+rd /s /q "{install_dir}\\backup"
+
+echo Restarting application...
+timeout /t 2 /nobreak >nul
 start "" "{current_exe}"
+
+echo Done!
 exit
 """
             
-            batch_path = os.path.join(install_dir, "_update.bat")
+            batch_path = os.path.join(install_dir, "_update_installer.bat")
             with open(batch_path, 'w') as f:
                 f.write(batch_content)
             
+            logger.info(f"Created update script: {batch_path}")
             logger.info("Starting update process...")
             
-            # Start the batch file and exit current application
+            # Start the batch file in a new console for visibility
             subprocess.Popen(
                 batch_path,
                 creationflags=subprocess.CREATE_NEW_CONSOLE,
-                shell=True
+                shell=True,
+                cwd=install_dir
             )
             
+            logger.info("Update installer launched successfully")
             return True
             
         except Exception as e:
             logger.error(f"Update installation failed: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return False
 
     def open_download_page(self, url: str):
