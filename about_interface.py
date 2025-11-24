@@ -365,26 +365,37 @@ class UpdateDashboard(CardWidget):
             
             # Enable update button if selected version is different from current
             current_version = self.update_manager.get_current_version()
-            if version != current_version and selected_release.get('zip_asset'):
+            
+            # If selecting current version, always reset to "Update" (disabled)
+            if version == current_version:
+                self.updateBtn.setEnabled(False)
+                self.updateBtn.setText("Update")
+                self.updateBtn.setIcon(FluentIcon.SYNC)
+                self.iconTimer.stop()
+                self.update_info = None
+            elif selected_release.get('zip_asset'):
+                # Different version selected with valid asset
                 self.updateBtn.setEnabled(True)
                 self.update_info = selected_release
                 
                 # Change button text and icon based on version comparison
                 if self.update_manager._compare_versions(version, current_version) < 0:
-                    self.updateBtn.setText("Install")  # Shorter text for rollback
+                    self.updateBtn.setText("Install")  # Rollback to older version
                     self.updateBtn.setIcon(FluentIcon.UP)  # Up arrow for rollback
                     self.iconTimer.stop()  # Stop rotation for Install
                 else:
-                    self.updateBtn.setText("Update")
+                    self.updateBtn.setText("Update")  # Upgrade to newer version
                     self.updateBtn.setIcon(FluentIcon.SYNC)  # Sync icon for update
                     # Start rotation animation for Update
                     if not self.iconTimer.isActive():
                         self.iconTimer.start()
             else:
+                # No valid asset available
                 self.updateBtn.setEnabled(False)
                 self.updateBtn.setText("Update")
                 self.updateBtn.setIcon(FluentIcon.SYNC)
                 self.iconTimer.stop()
+                self.update_info = None
     
     def _open_logs_folder(self):
         """Open the logs folder in file explorer."""
