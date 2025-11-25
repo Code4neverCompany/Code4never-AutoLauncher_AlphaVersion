@@ -528,6 +528,10 @@ echo   c4n-AutoLauncher Update Installer
 echo ========================================
 echo.
 echo Waiting for application to close...
+timeout /t 5 /nobreak >nul
+
+echo Ensuring old process is terminated...
+taskkill /F /IM Autolauncher.exe >nul 2>&1
 timeout /t 3 /nobreak >nul
 
 echo Backing up current version...
