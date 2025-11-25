@@ -25,10 +25,8 @@ for asset_file in glob.glob('assets/**/*', recursive=True):
         # Source path, destination directory
         added_files.append((asset_file, os.path.dirname(asset_file)))
 
-# Add data directory JSON files
-for data_file in glob.glob('data/*.json'):
-    if os.path.isfile(data_file):
-        added_files.append((data_file, 'data'))
+# NOTE: data/*.json files are NO LONGER bundled - user data now stored in AppData
+# The app will create tasks.json and settings.json in %APPDATA%\c4n-AutoLauncher\ on first run
 
 # Combine all data files  
 all_datas = added_files + qfluentwidgets_datas

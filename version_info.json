@@ -1,3 +1,30 @@
+{
+    "version": "1.0.8",
+    "build_date": "2025-11-25",
+    "changelog": [
+        {
+            "version": "1.0.8",
+            "date": "2025-11-25",
+            "changes": [
+                "Feature: Update-Proof Storage - User data now saved to AppData (survives updates!)",
+                "Feature: Visual Calendar Picker - Click on calendar to select dates",
+                "Feature: Time Format Setting - Choose between 12-hour (AM/PM) or 24-hour format",
+                "UI: Improved task dialog - 'How often should this run?' instead of 'Recurrence'",
+                "UI: Smart date picker - Only shows for 'Once' tasks (hidden for recurring)",
+                "UI: Date format applied from settings to calendar picker",
+                "Fix: Automatic data migration from old location to AppData",
+                "Improvement: User tasks and settings now persist across updates"
+            ]
+        },
+        {
+            "version": "1.0.7",
+            "date": "2025-11-24",
+            "changes": [
+                "Feature: Smart Auto-Update - Installs updates only when no tasks scheduled within 30 minutes",
+                "Feature: Pause/Resume Tasks with visual status indicator",
+                "Feature: Live Countdown Timers for all scheduled tasks",
+                "Feature: Date Format Options (YYYY-MM-DD, DD.MM.YYYY, MM/DD/YYYY, DD-MM-YYYY)",
+                "Feature: Execution Log with comprehensive event tracking",
                 "UI: Interactive column resizing - Users can now adjust table column widths",
                 "UI: Clearer column separation for Schedule and Countdown",
                 "UI: Icons now inline with task names (removed separate column)",
