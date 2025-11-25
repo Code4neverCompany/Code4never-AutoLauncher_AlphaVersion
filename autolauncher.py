@@ -159,6 +159,44 @@ class AutolauncherApp(FluentWindow):
     def _handle_update_available(self, update_info: dict):
         """Handle when an update is available."""
         version = update_info['version']
+        
+        # Update the About interface dashboard
+        if hasattr(self, 'aboutInterface') and hasattr(self.aboutInterface, 'dashboard'):
+            self.aboutInterface.dashboard.show_update_available(update_info)
+            
+        # Smart Auto-Update Logic
+        frequency = self.settings_manager.get('auto_update_frequency', 'startup')
+        if frequency == 'automatic' and self.update_manager.is_executable:
+            next_run = self.scheduler.get_next_run_time()
+            should_install = True
+            
+            if next_run:
+                now = datetime.now(next_run.tzinfo) if next_run.tzinfo else datetime.now()
+                delta = next_run - now
+                
+                if delta.total_seconds() < 1800: 
+                    should_install = False
+                    logger.info(f"Smart Update: Postponed. Next task in {delta.total_seconds()/60:.1f} mins")
+            
+            if should_install:
+                logger.info("Smart Update: Safe window detected. Starting automatic update...")
+                InfoBar.success(
+                    title="Smart Update",
+                    content="Installing update automatically (no conflicting tasks)...",
+                    orient=Qt.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.TOP,
+                    duration=3000,
+                    parent=self
+                )
+                self.aboutInterface._start_update_flow()
+                return
+        
+        # For Python script mode, just show notification and open browser
+        if not self.update_manager.is_executable:
+            InfoBar.info(
+                title=f"Update Available: v{version}",
+                content="Opening release page in browser...",
                 orient=Qt.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
