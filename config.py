@@ -9,8 +9,11 @@ from pathlib import Path
 
 # Application Information
 APP_NAME = "c4n-AutoLauncher"
-APP_VERSION = "1.0.9"
+APP_VERSION = "1.1.0"
 APP_AUTHOR = "Code4never"
+
+# Localization
+DEFAULT_LANGUAGE = "en"
 
 # Directories
 if getattr(sys, 'frozen', False):

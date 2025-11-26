@@ -5,7 +5,7 @@ Provides a modern Fluent Design dialog for adding and editing scheduled tasks.
 
 from datetime import datetime
 from pathlib import Path
-from PyQt5.QtCore import Qt, QDate, QTime, QPoint
+from PyQt5.QtCore import Qt, QDate, QTime, QPoint, QTimer
 from PyQt5.QtWidgets import QFileDialog
 from qfluentwidgets import (
     MessageBoxBase,
@@ -16,10 +16,13 @@ from qfluentwidgets import (
     TimePicker,
     AMTimePicker,
     BodyLabel,
-    ComboBox
+    ComboBox,
+    CheckBox
 )
 from task_manager import SettingsManager
+from task_manager import SettingsManager
 from logger import get_logger
+from language_manager import get_text
 
 logger = get_logger(__name__)
 
@@ -49,7 +52,7 @@ class TaskDialog(MessageBoxBase):
         self.drag_position = None
         
         # Set dialog title
-        title = "Edit Task" if self.is_edit_mode else "Add New Task"
+        title = get_text('dialog.edit_title') if self.is_edit_mode else get_text('dialog.add_title')
         self.titleLabel = SubtitleLabel(title, self)
         
         # Initialize UI components
@@ -72,30 +75,31 @@ class TaskDialog(MessageBoxBase):
         """Initialize the user interface components."""
         
         # Task Name
-        self.nameLabel = BodyLabel("Task Name:", self)
+        self.nameLabel = BodyLabel(get_text('dialog.name_label'), self)
         self.nameInput = LineEdit(self)
-        self.nameInput.setPlaceholderText("Enter a descriptive name for this task")
+        self.nameInput.setPlaceholderText(get_text('dialog.name_placeholder'))
         self.nameInput.setClearButtonEnabled(True)
         
         # Program Path
-        self.pathLabel = BodyLabel("Program Path:", self)
+        self.pathLabel = BodyLabel(get_text('dialog.path_label'), self)
         self.pathInput = LineEdit(self)
-        self.pathInput.setPlaceholderText("Select the program to execute")
+        self.pathInput.setPlaceholderText(get_text('dialog.path_placeholder'))
         self.pathInput.setClearButtonEnabled(True)
         
         # Browse Button
-        self.browseButton = PushButton("Browse...", self)
+        # Browse Button
+        self.browseButton = PushButton(get_text('dialog.browse'), self)
         self.browseButton.clicked.connect(self._browse_program)
         
         # Recurrence
-        self.recurrenceLabel = BodyLabel("How often should this run?", self)
+        self.recurrenceLabel = BodyLabel(get_text('dialog.recurrence_label'), self)
         self.recurrenceCombo = ComboBox(self)
         self.recurrenceCombo.addItems(["Once", "Daily", "Weekly", "Monthly"])
         self.recurrenceCombo.setCurrentIndex(0)
         self.recurrenceCombo.currentIndexChanged.connect(self._on_recurrence_changed)
         
         # Schedule Date
-        self.dateLabel = BodyLabel("Schedule Date:", self)
+        self.dateLabel = BodyLabel(get_text('dialog.date_label'), self)
         self.datePicker = CalendarPicker(self)
         # Set to current date using QDate
         now = datetime.now()
@@ -105,7 +109,7 @@ class TaskDialog(MessageBoxBase):
         self._apply_date_format()
         
         # Schedule Time
-        self.timeLabel = BodyLabel("Schedule Time:", self)
+        self.timeLabel = BodyLabel(get_text('dialog.time_label'), self)
         
         # Use appropriate time picker based on format preference
         time_format_setting = self.settings_manager.get('time_format', '24h')
@@ -142,11 +146,48 @@ class TaskDialog(MessageBoxBase):
         self.viewLayout.addSpacing(10)
         
         self.viewLayout.addWidget(self.timeLabel)
+        
+        # Add current time reference label
+        self.currentTimeLabel = BodyLabel(self)
+        self._update_current_time_label()
+        self.viewLayout.addWidget(self.currentTimeLabel)
+        
+        # Start timer to update current time label
+        self.time_update_timer = QTimer(self)
+        self.time_update_timer.timeout.connect(self._update_current_time_label)
+        self.time_update_timer.start(1000)  # Update every second
+        
         self.viewLayout.addWidget(self.timePicker)
+        self.viewLayout.addSpacing(10)
+
+        # Power Options
+        self.wakeCheckBox = CheckBox(get_text('dialog.wake_option'), self)
+        self.sleepCheckBox = CheckBox(get_text('dialog.sleep_option'), self)
+        
+        self.viewLayout.addWidget(self.wakeCheckBox)
+        self.viewLayout.addWidget(self.sleepCheckBox)
+        
+        # Pre-wake duration (only shown when wake is enabled)
+        self.preWakeLabel = BodyLabel("Pre-wake duration:", self)
+        self.preWakeCombo = ComboBox(self)
+        self.preWakeCombo.addItems(["1 minute", "3 minutes", "5 minutes", "10 minutes", "15 minutes"])
+        
+        # Default to global setting
+        default_prewake = self.settings_manager.get('pre_wake_minutes', 5)
+        prewake_map = {1: 0, 3: 1, 5: 2, 10: 3, 15: 4}
+        self.preWakeCombo.setCurrentIndex(prewake_map.get(default_prewake, 2))
+        
+        self.viewLayout.addWidget(self.preWakeLabel)
+        self.viewLayout.addWidget(self.preWakeCombo)
+        self.viewLayout.addSpacing(10)
+        
+        # Connect wake checkbox to show/hide pre-wake options
+        self.wakeCheckBox.stateChanged.connect(self._on_wake_checkbox_changed)
+        self._on_wake_checkbox_changed()  # Initialize visibility
         
         # Configure buttons
-        self.yesButton.setText("Save" if self.is_edit_mode else "Add Task")
-        self.cancelButton.setText("Cancel")
+        self.yesButton.setText(get_text('dialog.save') if self.is_edit_mode else get_text('dialog.add'))
+        self.cancelButton.setText(get_text('dialog.cancel'))
         
         # Initialize date picker visibility based on default recurrence (Once)
         self._on_recurrence_changed(0)
@@ -154,7 +195,7 @@ class TaskDialog(MessageBoxBase):
     def _browse_program(self):
         """Open file browser to select an executable."""
         # Use QFileDialog instance instead of static method to set options
-        dialog = QFileDialog(self, "Select Program")
+        dialog = QFileDialog(self, get_text('dialog.select_program'))
         dialog.setFileMode(QFileDialog.ExistingFile)
         dialog.setNameFilter("Executable Files (*.exe *.lnk);;All Files (*.*)")
         
@@ -195,6 +236,21 @@ class TaskDialog(MessageBoxBase):
             self.timePicker.setTime(QTime(schedule_time.hour, schedule_time.minute))
         except (ValueError, TypeError) as e:
             logger.warning(f"Failed to parse schedule time: {e}")
+            
+        # Load power options
+        self.wakeCheckBox.setChecked(self.task_data.get('wake_enabled', False))
+        self.sleepCheckBox.setChecked(self.task_data.get('sleep_after', False))
+        
+        # Load per-task pre-wake duration
+        task_prewake = self.task_data.get('pre_wake_minutes', self.settings_manager.get('pre_wake_minutes', 5))
+        prewake_map = {1: 0, 3: 1, 5: 2, 10: 3, 15: 4}
+        self.preWakeCombo.setCurrentIndex(prewake_map.get(task_prewake, 2))
+    
+    def _on_wake_checkbox_changed(self):
+        """Show/hide pre-wake duration options based on wake checkbox."""
+        is_wake_enabled = self.wakeCheckBox.isChecked()
+        self.preWakeLabel.setVisible(is_wake_enabled)
+        self.preWakeCombo.setVisible(is_wake_enabled)
     
     def validate_input(self) -> bool:
         """
@@ -255,12 +311,19 @@ class TaskDialog(MessageBoxBase):
         Returns:
             Dictionary with task data
         """
+        # Map combo index to minutes
+        prewake_values = [1, 3, 5, 10, 15]
+        pre_wake_minutes = prewake_values[self.preWakeCombo.currentIndex()]
+        
         task = {
             'name': self.nameInput.text().strip(),
             'program_path': self.pathInput.text().strip(),
             'schedule_time': self.get_scheduled_datetime().isoformat(),
             'recurrence': self.recurrenceCombo.currentText(),
-            'enabled': True
+            'enabled': True,
+            'wake_enabled': self.wakeCheckBox.isChecked(),
+            'sleep_after': self.sleepCheckBox.isChecked(),
+            'pre_wake_minutes': pre_wake_minutes
         }
         
         if self.is_edit_mode:
@@ -335,6 +398,18 @@ class TaskDialog(MessageBoxBase):
             event.accept()
         else:
             super().mouseReleaseEvent(event)
+    
+    def _update_current_time_label(self):
+        """Update the current time label with seconds."""
+        now = datetime.now()
+        time_format = self.settings_manager.get('time_format', '24h')
+        
+        if time_format == '12h':
+            time_str = now.strftime('%I:%M:%S %p')
+        else:
+            time_str = now.strftime('%H:%M:%S')
+        
+        self.currentTimeLabel.setText(f"Current time: {time_str}")
     
     def wheelEvent(self, event):
         """Handle mouse wheel for time adjustment."""

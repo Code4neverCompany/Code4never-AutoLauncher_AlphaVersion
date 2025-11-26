@@ -1,96 +1,52 @@
-# Autolauncher
+# Code4Never AutoLauncher (Beta)
 
-A modern desktop application for scheduling and automatically executing programs at specific times.
+![AutoLauncher Banner](assets/banner.png)
 
-Built with **PySide6** and **PySide6-Fluent-Widgets** for a beautiful Microsoft Fluent Design experience.
+> **Official Beta Release v1.1.0**
 
-## Features
+A modern, intelligent desktop automation tool designed to schedule, execute, and manage your applications with precision. Built with **PySide6** and **Fluent Design** for a premium Windows 11 experience.
 
-- ✨ **Modern Fluent Design UI** - Beautiful, responsive interface
-- 🌓 **Theme Switching** - Toggle between Light and Dark modes
-- ⏱️ **Countdown Timer** - Real-time display showing when tasks will execute
-- 📋 **Task Management** - Easily add, edit, and delete scheduled tasks
-- 🔔 **System Tray** - Runs in background, minimizes to tray
-- 💾 **Data Persistence** - Tasks and settings saved automatically
-- 📊 **Debug Logging** - Comprehensive logging for development (optional)
+## ✨ Key Features
 
-## Quick Start
+### 🚀 Intelligent Task Execution
+- **Smart Process Tracking**: Tracks the *actual* application process, even if you launch a shortcut (`.lnk`) or a game launcher (e.g., Riot Client, Plarium Play).
+- **Aggressive Mode**: Ensures tasks execute immediately if you're active, or waits for idle time if preferred.
+- **Double-Click Edit**: Quickly modify any task with a simple double-click.
 
-### 1. Install Dependencies
+### 🌙 Advanced Power Management
+- **Wake from Sleep**: Automatically wakes your computer to run scheduled tasks.
+- **Pre-wake Process**: Wakes the system 1-15 minutes *before* the task starts to ensure everything is ready (network, updates, etc.).
+- **Sleep after Completion**: Automatically puts the system back to sleep once the *actual* application closes.
 
-```powershell
-# Create and activate virtual environment
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+### 🎨 Premium User Experience
+- **Fluent Design**: Beautiful, native-feeling UI with Mica effects and acrylic transparency.
+- **Theme Support**: Seamlessly switches between Light and Dark modes.
+- **Bilingual**: Full support for English and German.
+- **Real-time Countdown**: Always know exactly when the next task will run.
 
-# Install requirements
-pip install -r requirements.txt
-```
+## 🛠️ Quick Start
 
-### 2. Run the Application
+1.  **Download**: Get the latest release from the [Releases Page](../../releases).
+2.  **Install**: Run the installer or extract the portable ZIP.
+3.  **Run**: Launch `c4n-AutoLauncher.exe`.
+4.  **Add Task**: Click "Add Task", select your program (exe or shortcut), and set the time.
+5.  **Relax**: The app will handle the rest, including waking up your PC!
 
-```powershell
-python autolauncher.py
-```
+## 🗺️ Roadmap (Planned QoL Updates)
 
-### 3. Add Your First Task
+- [ ] **Cloud Sync**: Sync tasks across multiple devices.
+- [ ] **Advanced Triggers**: Run tasks on startup, network connection, or specific system events.
+- [ ] **Task Chaining**: Run Task B automatically after Task A finishes.
+- [ ] **Performance Mode**: Automatically change Windows power plans during task execution.
+- [ ] **Plugin System**: Allow community extensions.
 
-1. Click **"Add Task"** button
-2. Enter a task name
-3. Browse for an executable file
-4. Set the schedule date and time
-5. Click **"Add Task"**
-6. Watch the countdown timer!
+## 📜 License
 
-## Project Structure
+Copyright © 2025 **Code4Never**.
+**Non-Commercial Source License**.
+Free to use, modify, and distribute. **Selling this software is strictly prohibited.**
+See [LICENSE](LICENSE) for details.
 
-```
-Autolauncher/
-├── autolauncher.py          # Main application window
-├── task_dialog.py           # Task configuration dialog
-├── task_manager.py          # Data persistence (JSON)
-├── scheduler.py             # Task scheduling (APScheduler)
-├── logger.py                # Logging configuration
-├── config.py                # Application settings
-├── requirements.txt         # Python dependencies
-├── .gitignore              # Git ignore rules
-├── autolauncher_tutorial.md # Complete tutorial
-└── README.md               # This file
-```
+---
 
-## Development Mode
-
-Enable debug logging during development:
-
-```powershell
-$env:DEBUG=1
-python autolauncher.py
-```
-
-This creates detailed logs in `logs/autolauncher.log`.
-
-## Documentation
-
-See [autolauncher_tutorial.md](autolauncher_tutorial.md) for the complete, step-by-step tutorial covering:
-
-- Environment setup with exact commands
-- Architecture overview and design decisions
-- Detailed implementation guide for each module
-- Icon integration instructions
-- Debugging tips and troubleshooting
-- Production deployment guidelines
-
-## Requirements
-
-- Python 3.9+
-- PySide6 >= 6.5.0
-- PySide6-Fluent-Widgets >= 1.7.0
-- APScheduler >= 3.10.0
-
-## License
-
-Free to use and modify for personal and commercial projects.
-
-## Author
-
-Created as a tutorial for building cross-platform GUI applications with Python and Fluent Design.
+*Created with ❤️ by Code4Never & Antigravity*

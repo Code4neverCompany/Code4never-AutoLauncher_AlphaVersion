@@ -39,7 +39,6 @@ from scheduler import TaskScheduler
 from settings_interface import SettingsInterface
 from about_interface import AboutInterface
 from update_manager import UpdateManager
-from language_manager import get_text, get_language_manager
 from logger import get_logger
 from config import (
     APP_NAME,
@@ -69,28 +68,12 @@ class AutolauncherApp(FluentWindow):
         self.scheduler = TaskScheduler()
         self.update_manager = UpdateManager()
         
-        # CRITICAL FIX: Load saved language BEFORE creating UI
-        saved_language = self.settings_manager.get('language', 'en')
-        lang_manager = get_language_manager()
-        lang_manager.set_language(saved_language)
-        logger.info(f"Initialized language to: {saved_language}")
-        
         # Load scheduled tasks into scheduler
         self._load_scheduled_tasks()
-        
-        # Connect scheduler signals
-        self.scheduler.ask_user_permission.connect(self._handle_task_permission_request)
-        self.scheduler.task_started.connect(self._handle_task_started)
-        self.scheduler.task_finished.connect(self._handle_task_finished)
-        self.scheduler.task_postponed.connect(self._handle_task_postponed)
         
         # Setup UI
         self._init_ui()
         self._setup_system_tray()
-        
-        # CRITICAL FIX: Reload UI text after creation to ensure correct language
-        # This handles any UI elements that might have been created with default language
-        QTimer.singleShot(100, self.reload_ui_text)
         
         # Setup countdown timer
         self.countdown_timer = QTimer(self)
@@ -109,7 +92,6 @@ class AutolauncherApp(FluentWindow):
         
         # Setup auto-update after a short delay to ensure UI is fully ready
         QTimer.singleShot(100, self._setup_auto_update)
-
     
     def _enforce_theme(self):
         """Periodically enforce the selected theme to prevent resets."""
@@ -177,77 +159,6 @@ class AutolauncherApp(FluentWindow):
     def _handle_update_available(self, update_info: dict):
         """Handle when an update is available."""
         version = update_info['version']
-        
-        # Update the About interface dashboard
-        if hasattr(self, 'aboutInterface') and hasattr(self.aboutInterface, 'dashboard'):
-            self.aboutInterface.dashboard.show_update_available(update_info)
-            
-        # Smart Auto-Update Logic (only in Smart mode)
-        frequency = self.settings_manager.get('auto_update_frequency', 'startup')
-        if frequency == 'automatic' and self.update_manager.is_executable:
-            smart_auto_install = self.settings_manager.get('smart_auto_install', False)
-            
-            if smart_auto_install:
-                # Smart mode: Check task schedule
-                next_run = self.scheduler.get_next_run_time()
-                should_install = True
-                
-                if next_run:
-                    now = datetime.now(next_run.tzinfo) if next_run.tzinfo else datetime.now()
-                    delta = next_run - now
-                    
-                    if delta.total_seconds() < 1800: 
-                        should_install = False
-                        logger.info(f"Smart Update: Postponed. Next task in {delta.total_seconds()/60:.1f} mins")
-                        
-                        # Show notification that update is postponed
-                        info_bar = InfoBar.info(
-                            title=f"Update Available: v{version}",
-                            content=f"Will install after tasks complete. Click to view details.",
-                            orient=Qt.Horizontal,
-                            isClosable=True,
-                            position=InfoBarPosition.TOP,
-                            duration=-1,  # Persistent
-                            parent=self
-                        )
-                        view_button = PushButton("View Details")
-                        view_button.clicked.connect(lambda: self._navigate_to_about_for_update())
-                        info_bar.addWidget(view_button)
-                        return
-                
-                if should_install:
-                    logger.info("Smart Update: Safe window detected. Starting automatic update...")
-                    InfoBar.success(
-                        title="Smart Update",
-                        content="Installing update automatically (no conflicting tasks)...",
-                        orient=Qt.Horizontal,
-                        isClosable=True,
-                        position=InfoBarPosition.TOP,
-                        duration=3000,
-                        parent=self
-                    )
-                    self.aboutInterface._start_update_flow()
-                    return
-            else:
-                # Immediate install mode
-                logger.info("Auto-Update: Starting immediate update...")
-                InfoBar.success(
-                    title="Auto-Update",
-                    content=f"Installing v{version} automatically...",
-                    orient=Qt.Horizontal,
-                    isClosable=True,
-                    position=InfoBarPosition.TOP,
-                    duration=3000,
-                    parent=self
-                )
-                self.aboutInterface._start_update_flow()
-                return
-        
-        # For Python script mode, just show notification and open browser
-        if not self.update_manager.is_executable:
-            InfoBar.info(
-                title=f"Update Available: v{version}",
-                content="Opening release page in browser...",
                 orient=Qt.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
@@ -257,10 +168,10 @@ class AutolauncherApp(FluentWindow):
             self.update_manager.open_download_page(update_info['url'])
             return
         
-        # For executable mode (Manual/Startup modes), show notification with action to navigate to About page
-        zip_asset = update_info.get('exe_asset') or update_info.get('zip_asset')
-        if not zip_asset:
-            logger.warning("No update package found in release")
+        # For executable mode, show notification with action to navigate to About page
+        exe_asset = update_info.get('exe_asset')
+        if not exe_asset:
+            logger.warning("No .exe asset found in release")
             # Still show notification to inform user
             info_bar = InfoBar.info(
                 title=f"Update Available: v{version}",
@@ -275,7 +186,6 @@ class AutolauncherApp(FluentWindow):
             info_bar.addWidget(PushButton("View Details"))
             info_bar.widget.clicked.connect(lambda: self.stackedWidget.setCurrentWidget(self.aboutInterface))
             return
-
         
         # Show prominent notification with action to view in About page
         info_bar = InfoBar.success(
@@ -376,55 +286,12 @@ class AutolauncherApp(FluentWindow):
                 parent=self
             )
     
-    def reload_ui_text(self):
-        """Reload all UI text with current language."""
-        # Window Title
-        version = self.update_manager.get_current_version()
-        self.setWindowTitle(f"{get_text('main_window.title')} (Alpha v{version})")
-        
-        # Toolbar Buttons
-        self.addButton.setText(get_text('main_window.add_task'))
-        self.editButton.setText(get_text('main_window.edit_task'))
-        self.deleteButton.setText(get_text('main_window.delete_task'))
-        self.runNowButton.setText(get_text('main_window.run_now'))
-        self.pauseResumeButton.setText(get_text('main_window.pause_resume'))
-        self.viewLogButton.setText(get_text('main_window.view_log'))
-        self.themeButton.setText(get_text('main_window.toggle_theme'))
-        
-        # Navigation Items
-        if hasattr(self, 'tasksInterface'):
-            self.tasksInterface.setText(get_text('main_window.tasks'))
-        if hasattr(self, 'aboutItem'):
-            self.aboutItem.setText(get_text('main_window.about'))
-        if hasattr(self, 'settingsItem'):
-            self.settingsItem.setText(get_text('main_window.settings'))
-
-        # Table Headers
-        self.columns = [
-            get_text('main_window.col_name'),
-            get_text('main_window.col_path'),
-            get_text('main_window.col_schedule'),
-            get_text('main_window.col_countdown'),
-            get_text('main_window.col_status')
-        ]
-        self.taskTable.setHorizontalHeaderLabels(self.columns)
-        
-        # Refresh table content
-        self._refresh_task_table()
-        
-        # Reload About Interface
-        if hasattr(self, 'aboutInterface'):
-            self.aboutInterface.reload_ui_text()
-        
-        logger.debug("Main window UI text reloaded")
-
     def _init_ui(self):
         """Initialize the user interface."""
         
         # Set window properties
-        # Set window properties
         version = self.update_manager.get_current_version()
-        self.setWindowTitle(f"{get_text('main_window.title')} (Alpha v{version})")
+        self.setWindowTitle(f"{APP_NAME} (Alpha v{version})")
         self.resize(
             self.settings_manager.get('window_width', DEFAULT_WINDOW_WIDTH),
             self.settings_manager.get('window_height', DEFAULT_WINDOW_HEIGHT)
@@ -444,7 +311,6 @@ class AutolauncherApp(FluentWindow):
         # Create settings interface
         self.settingsInterface = SettingsInterface(self.settings_manager, self)
         self.settingsInterface.date_format_changed.connect(self._refresh_task_table)
-        self.settingsInterface.language_changed.connect(self.reload_ui_text)
         
         # Create about interface
         self.aboutInterface = AboutInterface(self)
@@ -460,24 +326,23 @@ class AutolauncherApp(FluentWindow):
         self.mainWidget.setObjectName("mainWidget")
         
         # Add navigation items
-        # Add navigation items
-        self.tasksInterface = self.addSubInterface(
+        self.addSubInterface(
             self.mainWidget,
             FluentIcon.CALENDAR,
-            get_text('main_window.tasks')
+            "Tasks"
         )
         
-        self.aboutItem = self.addSubInterface(
+        self.addSubInterface(
             self.aboutInterface,
             FluentIcon.INFO,
-            get_text('main_window.about'),
+            "About",
             position=NavigationItemPosition.BOTTOM
         )
         
-        self.settingsItem = self.addSubInterface(
+        self.addSubInterface(
             self.settingsInterface,
             FluentIcon.SETTING,
-            get_text('main_window.settings'),
+            "Settings",
             position=NavigationItemPosition.BOTTOM
         )
     
@@ -496,10 +361,9 @@ class AutolauncherApp(FluentWindow):
         logger.info(f"Theme changed to {new_theme}")
         
         # Show notification
-        # Show notification
         InfoBar.success(
-            title=get_text('main_window.theme_changed'),
-            content=get_text('main_window.theme_switched', theme=new_theme),
+            title="Theme Changed",
+            content=f"Switched to {new_theme} theme",
             orient=Qt.Horizontal,
             isClosable=True,
             position=InfoBarPosition.TOP,
@@ -539,26 +403,25 @@ class AutolauncherApp(FluentWindow):
         
         
         # Create buttons
-        # Create buttons
-        self.addButton = PushButton(FluentIcon.ADD, get_text('main_window.add_task'), self)
+        self.addButton = PushButton(FluentIcon.ADD, "Add Task", self)
         self.addButton.clicked.connect(self._add_task)
         
-        self.editButton = PushButton(FluentIcon.EDIT, get_text('main_window.edit_task'), self)
+        self.editButton = PushButton(FluentIcon.EDIT, "Edit Task", self)
         self.editButton.clicked.connect(self._edit_task)
         
-        self.deleteButton = PushButton(FluentIcon.DELETE, get_text('main_window.delete_task'), self)
+        self.deleteButton = PushButton(FluentIcon.DELETE, "Delete Task", self)
         self.deleteButton.clicked.connect(self._delete_task)
         
-        self.runNowButton = PushButton(FluentIcon.PLAY, get_text('main_window.run_now'), self)
+        self.runNowButton = PushButton(FluentIcon.PLAY, "Run Now", self)
         self.runNowButton.clicked.connect(self._run_now)
         
-        self.pauseResumeButton = PushButton(FluentIcon.PAUSE, get_text('main_window.pause_resume'), self)
+        self.pauseResumeButton = PushButton(FluentIcon.PAUSE, "Pause/Resume", self)
         self.pauseResumeButton.clicked.connect(self._toggle_task_pause)
         
-        self.viewLogButton = PushButton(FluentIcon.HISTORY, get_text('main_window.view_log'), self)
+        self.viewLogButton = PushButton(FluentIcon.HISTORY, "View Log", self)
         self.viewLogButton.clicked.connect(self._show_execution_log)
         
-        self.themeButton = PushButton(FluentIcon.CONSTRACT, get_text('main_window.toggle_theme'), self)
+        self.themeButton = PushButton(FluentIcon.CONSTRACT, "Toggle Theme", self)
         self.themeButton.clicked.connect(self._toggle_theme)
         
         # Add buttons to toolbar
@@ -575,14 +438,7 @@ class AutolauncherApp(FluentWindow):
         self.taskTable = TableWidget(self)
         
         # Define columns
-        # Define columns
-        self.columns = [
-            get_text('main_window.col_name'),
-            get_text('main_window.col_path'),
-            get_text('main_window.col_schedule'),
-            get_text('main_window.col_countdown'),
-            get_text('main_window.col_status')
-        ]
+        self.columns = ["Task Name", "Program Path", "Schedule", "Countdown", "Status"]
         self.taskTable.setColumnCount(len(self.columns))
         self.taskTable.setHorizontalHeaderLabels(self.columns)
         
@@ -604,9 +460,6 @@ class AutolauncherApp(FluentWindow):
         self.taskTable.setColumnWidth(4, 100)  # Status
         
         header.setStretchLastSection(True)
-        
-        # Connect double-click to edit task
-        self.taskTable.cellDoubleClicked.connect(self._on_task_double_clicked)
         
         # Add toolbar and table to main layout
         self.mainLayout.addWidget(self.toolbar)
@@ -673,7 +526,7 @@ class AutolauncherApp(FluentWindow):
             self.taskTable.setItem(row, 3, QTableWidgetItem(self._calculate_countdown(task)))
             
             # Status
-            status = get_text('main_window.status_enabled') if task.get('enabled', True) else get_text('main_window.status_disabled')
+            status = "Enabled" if task.get('enabled', True) else "Disabled"
             self.taskTable.setItem(row, 4, QTableWidgetItem(status))
             
             # Store task ID in row
@@ -700,8 +553,8 @@ class AutolauncherApp(FluentWindow):
                 schedule_time = datetime.fromisoformat(task.get('schedule_time'))
                 now = datetime.now()
                 if schedule_time <= now and task.get('recurrence', 'Once') == 'Once':
-                    return get_text('main_window.status_expired')
-                return get_text('main_window.status_paused')
+                    return "Expired"
+                return "Paused"
             
             # Calculate delta using timezone-naive datetimes if needed
             now = datetime.now(next_run.tzinfo)
@@ -720,8 +573,7 @@ class AutolauncherApp(FluentWindow):
                 
         except Exception as e:
             logger.error(f"Error calculating countdown: {e}")
-
-            return get_text('main_window.status_error')
+            return "Error"
     
     def _update_countdowns(self):
         """Update countdown timers for all tasks."""
@@ -739,8 +591,8 @@ class AutolauncherApp(FluentWindow):
         selected_rows = self.taskTable.selectedItems()
         if not selected_rows:
             InfoBar.warning(
-                title=get_text('main_window.no_selection'),
-                content=get_text('main_window.select_task_run'),
+                title="No Selection",
+                content="Please select a task to run",
                 orient=Qt.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
@@ -755,8 +607,8 @@ class AutolauncherApp(FluentWindow):
         if task:
             if self.scheduler.execute_immediately(task):
                 InfoBar.success(
-                    title=get_text('main_window.task_started'),
-                    content=get_text('main_window.executing_task', name=task['name']),
+                    title="Task Started",
+                    content=f"Executing '{task['name']}' now...",
                     orient=Qt.Horizontal,
                     isClosable=True,
                     position=InfoBarPosition.TOP,
@@ -765,15 +617,14 @@ class AutolauncherApp(FluentWindow):
                 )
             else:
                 InfoBar.error(
-                    title=get_text('main_window.error'),
-                    content=get_text('main_window.failed_start'),
+                    title="Error",
+                    content="Failed to start task",
                     orient=Qt.Horizontal,
                     isClosable=True,
                     position=InfoBarPosition.TOP,
                     duration=3000,
                     parent=self
                 )
-
 
     def _add_task(self):
         """Show dialog to add a new task."""
@@ -790,14 +641,13 @@ class AutolauncherApp(FluentWindow):
             if dialog.validate_input():
                 task_data = dialog.get_task_data()
                 
-
                 if self.task_manager.add_task(task_data):
                     self.scheduler.add_job(task_data)
                     self._refresh_task_table()
                     
                     InfoBar.success(
-                        title=get_text('main_window.task_added'),
-                        content=get_text('main_window.task_scheduled', name=task_data['name']),
+                        title="Task Added",
+                        content=f"Task '{task_data['name']}' has been scheduled",
                         orient=Qt.Horizontal,
                         isClosable=True,
                         position=InfoBarPosition.TOP,
@@ -807,8 +657,8 @@ class AutolauncherApp(FluentWindow):
                     logger.info(f"Added task: {task_data['name']}")
                 else:
                     InfoBar.error(
-                        title=get_text('main_window.error'),
-                        content=get_text('main_window.failed_save'),
+                        title="Error",
+                        content="Failed to save task",
                         orient=Qt.Horizontal,
                         isClosable=True,
                         position=InfoBarPosition.TOP,
@@ -817,8 +667,8 @@ class AutolauncherApp(FluentWindow):
                     )
             else:
                 InfoBar.warning(
-                    title=get_text('main_window.invalid_input'),
-                    content=get_text('main_window.check_input'),
+                    title="Invalid Input",
+                    content="Please check your input and try again",
                     orient=Qt.Horizontal,
                     isClosable=True,
                     position=InfoBarPosition.TOP,
@@ -832,8 +682,8 @@ class AutolauncherApp(FluentWindow):
         selected_rows = self.taskTable.selectedItems()
         if not selected_rows:
             InfoBar.warning(
-                title=get_text('main_window.no_selection'),
-                content=get_text('main_window.select_task_edit'),
+                title="No Selection",
+                content="Please select a task to edit",
                 orient=Qt.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
@@ -863,8 +713,8 @@ class AutolauncherApp(FluentWindow):
                         self._refresh_task_table()
                         
                         InfoBar.success(
-                            title=get_text('main_window.task_updated'),
-                            content=get_text('main_window.task_updated_msg', name=updated_task['name']),
+                            title="Task Updated",
+                            content=f"Task '{updated_task['name']}' has been updated",
                             orient=Qt.Horizontal,
                             isClosable=True,
                             position=InfoBarPosition.TOP,
@@ -874,21 +724,14 @@ class AutolauncherApp(FluentWindow):
                         logger.info(f"Updated task ID {task_id}")
                 else:
                     InfoBar.warning(
-                        title=get_text('main_window.invalid_input'),
-                        content=get_text('main_window.check_input'),
+                        title="Invalid Input",
+                        content="Please check your input and try again",
                         orient=Qt.Horizontal,
                         isClosable=True,
                         position=InfoBarPosition.TOP,
                         duration=3000,
                         parent=self
                     )
-    
-    def _on_task_double_clicked(self, row: int, column: int):
-        """Handle double-click on task table - opens edit dialog."""
-        # Select the row
-        self.taskTable.selectRow(row)
-        # Call edit task
-        self._edit_task()
     
     def _delete_task(self):
         """Delete the selected task."""
@@ -1018,48 +861,6 @@ class AutolauncherApp(FluentWindow):
         
         # Quit
         QApplication.quit()
-    
-    def _handle_task_permission_request(self, task: dict):
-        """Handle permission request from scheduler when user is active."""
-        dialog = MessageBox(
-            get_text('main_window.task_started'),
-            f"Task '{task['name']}' is ready to run.\nYou are currently active. Run now or postpone?",
-            self
-        )
-        dialog.yesButton.setText("Run Now")
-        dialog.cancelButton.setText("Postpone 10 min")
-        
-        result = dialog.exec()
-        
-        if result:  # Yes - Run Now
-            self.scheduler.handle_user_response(task, 'Run')
-        else:  # Cancel - Postpone
-            self.scheduler.handle_user_response(task, 'Postpone')
-    
-    
-    def _handle_task_started(self, task_id: int, task_name: str):
-        """Handle task started event."""
-        logger.info(f"Task started: {task_name} (ID: {task_id})")
-        # Update UI or show notification if needed
-    
-    def _handle_task_finished(self, task_id: int):
-        """Handle task finished event."""
-        logger.info(f"Task finished: ID {task_id}")
-        self._refresh_task_table()
-    
-    def _handle_task_postponed(self, task_id: int, new_time_str: str):
-        """Handle task postponed event."""
-        task = self.task_manager.get_task(task_id)
-        if task:
-            InfoBar.info(
-                title="Task Postponed",
-                content=f"Task '{task['name']}' postponed to {new_time_str}",
-                orient=Qt.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=3000,
-                parent=self
-            )
     
     def changeEvent(self, event):
         """Handle system theme changes and enforce user preference."""

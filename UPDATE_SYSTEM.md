@@ -1,3 +1,99 @@
+## Changes for version 1.1.0
+- BETA RELEASE: Official Beta Launch!
+- FEATURE: Wake from Sleep - System wakes up automatically for scheduled tasks
+- FEATURE: Pre-wake Process - Configurable pre-wake duration (1-15 mins) to ensure system is ready
+- FEATURE: Smart Process Tracking - Tracks actual game/app processes, including shortcuts (.lnk) and launchers
+- FEATURE: Sleep after Completion - System sleeps only when the actual task finishes
+- UX: Double-click task row to edit
+- UX: Real-time clock display in Task Dialog
+
+## Changes for version 1.0.13l
+- TEST: Target release for verifying auto-update from v1.0.13k
+- INFO: If you are seeing this, the auto-update worked!
+
+## Changes for version 1.0.13k
+- FIX: Resolved NameError regression in update manager
+- FIX: Restored missing PowerShell download logic
+- TEST: Final verification release for auto-update flow
+
+## Changes for version 1.0.13j
+- TEST: Target release for verifying auto-update from v1.0.13i
+- INFO: If you are seeing this, the auto-update worked!
+
+## Changes for version 1.0.13i
+- FIX: Implemented robust PowerShell script-based download mechanism
+- FIX: Resolved syntax error in update manager
+- TEST: Final verification release for auto-update flow
+
+## Changes for version 1.0.13h
+- TEST: Final verification release for PowerShell update engine
+- FIX: Confirmed robust download capability via Invoke-WebRequest
+
+## Changes for version 1.0.13g
+- FIX: Replaced Python downloader with robust Windows PowerShell downloader
+- FIX: Solves persistent 0-byte download issues by using OS native networking
+- FIX: Improved handling of SSL, redirects, and proxies
+
+## Changes for version 1.0.13f
+- TEST: Verification release to confirm auto-update functionality
+- FIX: Confirmed fix for 0-byte downloads
+- FIX: Confirmed fix for startup crashes
+
+## Changes for version 1.0.13e
+- FIX: Resolved application crash on startup due to missing UI method
+- FIX: File logging now enabled in production builds (was DEBUG-only)
+- FIX: Logs directory button now points to correct location
+
+## Changes for version 1.0.13d
+- FIX: File logging now enabled in production builds (was DEBUG-only)
+- FIX: Logs directory button now points to correct location
+
+## Changes for version 1.0.13c
+- FIX: Application now properly loads saved language preference on startup
+- FIX: Eliminated mixed language text on first launch
+
+## Changes for version 1.0.13b
+- FIX: Auto-update downloads now properly follow GitHub CDN redirects
+- FIX: Added comprehensive download logging with progress tracking
+- FIX: Enhanced error detection for 0-byte file downloads
+- FIX: Added ZIP file validation before installation
+
+## Changes for version 1.0.13a
+- FIX: Corrected translation JSON structure - separated 'about' section from 'dialog'
+- FIX: Fixed translation key prefixes in task_card.py
+
+## Changes for version 1.0.13
+- FEATURE: Bilingual Support - English and German with dynamic language switching
+- FEATURE: Comprehensive translations for all UI elements, dialogs, and messages
+- UPDATE: Refactored UI components to support dynamic text reloading
+
+## Changes for version 1.0.12
+- FIX: Updated SettingsInterface docstrings to resolve import error
+- FIX: Ensure module import works for packaged executable
+
+## Changes for version 1.0.12
+- FIX: Updated SettingsInterface docstrings to resolve import error
+- FIX: Ensure module import works for packaged executable
+
+## Changes for version 1.0.11
+- FEATURE: Language Support - English and German
+- FEATURE: Dynamic language switching without restart
+- UPDATE: Translated Settings interface for bilingual support
+
+## Changes for version 1.0.11
+- FEATURE: Language Support - English and German
+- FEATURE: Dynamic language switching without restart
+- UPDATE: Translated Settings interface for bilingual support
+
+## Changes for version 1.0.11
+- FEATURE: Language Support - English and German
+- FEATURE: Dynamic language switching without restart
+- UPDATE: Translated Settings interface for bilingual support
+
+## Changes for version 1.0.10
+- FIX: Critical updater fix - supports renamed executables
+- FIX: Improved update installation reliability
+
 ## Changes for version 1.0.4
 - HOTFIX: Fixed crash on startup due to UI initialization error
 - Restored missing method in About interface

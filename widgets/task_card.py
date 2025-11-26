@@ -10,6 +10,10 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGraphics
 from qfluentwidgets import CardWidget, isDarkTheme
 from .countdown_indicator import CountdownIndicator
 from .status_badge import StatusBadge
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from language_manager import get_text
 
 
 class TaskCard(CardWidget):
@@ -57,7 +61,7 @@ class TaskCard(CardWidget):
         info_layout.setSpacing(4)
         
         # Task name
-        self.name_label = QLabel(self.task_data.get('name', 'Unknown'))
+        self.name_label = QLabel(self.task_data.get('name', get_text('dialog.unknown')))
         self.name_label.setFont(QFont("Segoe UI", 11, QFont.Bold))
         self.name_label.setWordWrap(False)
         
@@ -71,7 +75,7 @@ class TaskCard(CardWidget):
         
         # Status badge
         self.status_badge = StatusBadge()
-        status = "Active" if self.task_data.get('enabled', True) else "Paused"
+        status = get_text('dialog.active') if self.task_data.get('enabled', True) else get_text('dialog.paused')
         self.status_badge.set_status(status)
         
         top_layout.addWidget(self.icon_label)
@@ -105,14 +109,16 @@ class TaskCard(CardWidget):
             from datetime import datetime
             schedule_time = datetime.fromisoformat(self.task_data.get('schedule_time'))
             recurrence = self.task_data.get('recurrence', 'Once')
+            recurrence_text = get_text(f'dialog.recurrence_{recurrence.lower()}')
+            at_text = get_text('dialog.at')
             
             if recurrence == 'Once':
-                return f"{recurrence} at {schedule_time.strftime('%H:%M')}"
+                return f"{recurrence_text} {at_text} {schedule_time.strftime('%H:%M')}"
             else:
                 time_str = schedule_time.strftime('%H:%M')
-                return f"{recurrence} at {time_str}"
+                return f"{recurrence_text} {at_text} {time_str}"
         except:
-            return "Invalid schedule"
+            return get_text('dialog.invalid_schedule')
     
     def _setup_animations(self):
         """Setup hover and click animations."""
@@ -158,7 +164,7 @@ class TaskCard(CardWidget):
     
     def update_status(self, is_active):
         """Update status badge."""
-        status = "Active" if is_active else "Paused"
+        status = get_text('dialog.active') if is_active else get_text('dialog.paused')
         self.status_badge.set_status(status)
         self.task_data['enabled'] = is_active
     

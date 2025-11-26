@@ -24,7 +24,8 @@ VERSION_FILE = "version_info.json"
 LAST_CHECK_FILE = "last_update_check.json"
 ETAG_CACHE_FILE = "etag_cache.json"
 GITHUB_REPO = "Code4neverCompany/Code4never-AutoLauncher_AlphaVersion"
-GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases"
+# Allow overriding URL for testing
+GITHUB_API_URL = os.environ.get("AUTOLAUNCHER_UPDATE_URL", f"https://api.github.com/repos/{GITHUB_REPO}/releases")
 
 class UpdateManager:
     """
@@ -35,7 +36,8 @@ class UpdateManager:
     def __init__(self):
         """Initialize the UpdateManager."""
         self.version_info = self._load_version_info()
-        self.is_executable = getattr(sys, 'frozen', False)
+        # Allow forcing executable mode for testing
+        self.is_executable = getattr(sys, 'frozen', False) or os.environ.get("AUTOLAUNCHER_TEST_MODE") == "1"
         self.etag_cache = self._load_etag_cache()
         logger.info(f"UpdateManager initialized. Current Version: {self.get_current_version()}")
         logger.info(f"Running as: {'Executable' if self.is_executable else 'Python Script'}")
@@ -216,7 +218,8 @@ class UpdateManager:
                     "url": latest_release.get("html_url"),
                     "body": latest_release.get("body"),
                     "assets": assets,
-                    "exe_asset": update_asset,
+                    "zip_asset": update_asset,  # Changed from exe_asset to zip_asset
+                    "exe_asset": update_asset,  # Keep for backwards compatibility
                     "can_auto_update": update_asset is not None and self.is_executable
                 }, None
             else:
@@ -315,7 +318,8 @@ class UpdateManager:
                         "url": latest_release.get("html_url"),
                         "body": latest_release.get("body"),
                         "assets": assets,
-                        "exe_asset": update_asset,
+                        "zip_asset": update_asset,  # Changed from exe_asset to zip_asset
+                        "exe_asset": update_asset,  # Keep for backwards compatibility
                         "can_auto_update": update_asset is not None and self.is_executable
                     }, None
                 else:
@@ -436,32 +440,104 @@ class UpdateManager:
                 logger.error("No download URL found in asset")
                 return None
             
-            logger.info(f"Downloading {file_name} ({file_size} bytes)...")
+            logger.info("=" * 60)
+            logger.info("STARTING UPDATE DOWNLOAD")
+            logger.info("=" * 60)
+            logger.info(f"Asset Name: {file_name}")
+            logger.info(f"Expected Size: {file_size:,} bytes ({file_size / (1024*1024):.2f} MB)")
+            logger.info(f"Download URL: {download_url}")
             
             # Create temp directory for download
             temp_dir = tempfile.mkdtemp(prefix="autolauncher_update_")
             download_path = os.path.join(temp_dir, file_name)
             
-            # Download with progress tracking
-            response = requests.get(download_url, stream=True, timeout=30)
-            response.raise_for_status()
+            logger.info(f"Download Destination: {download_path}")
+            logger.info(f"Temporary Directory: {temp_dir}")
+            logger.info("Starting download via PowerShell script...")
             
-            downloaded = 0
-            chunk_size = 8192
+            # Create a temporary PowerShell script
+            # This avoids command-line quoting hell and is more robust
+            ps_script_path = os.path.join(temp_dir, "download_update.ps1")
+            ps_script_content = f"""
+$ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+try {{
+    Invoke-WebRequest -Uri '{download_url}' -OutFile '{download_path}' -UserAgent 'AutoLauncher-Updater'
+    exit 0
+}} catch {{
+    Write-Error $_.Exception.Message
+    exit 1
+}}
+"""
+            try:
+                with open(ps_script_path, 'w') as f:
+                    f.write(ps_script_content)
+                    
+                # Run the PowerShell script
+                ps_command = [
+                    "powershell",
+                    "-NoProfile",
+                    "-ExecutionPolicy", "Bypass",
+                    "-File", ps_script_path
+                ]
+                
+                result = subprocess.run(
+                    ps_command,
+                    capture_output=True,
+                    text=True,
+                    timeout=300
+                )
+                
+                if result.returncode != 0:
+                    logger.error(f"PowerShell script failed with code {result.returncode}")
+                    logger.error(f"Stderr: {result.stderr}")
+                    logger.error(f"Stdout: {result.stdout}")
+                    return None
+                    
+                logger.info("PowerShell download script completed successfully")
+                
+                # Verify download completed
+                if not os.path.exists(download_path):
+                    logger.error(f"Download file does not exist after download: {download_path}")
+                    return None
+                    
+                actual_size = os.path.getsize(download_path)
+                logger.info("=" * 60)
+                logger.info("DOWNLOAD COMPLETED")
+                logger.info(f"Downloaded: {actual_size:,} bytes ({actual_size / (1024*1024):.2f} MB)")
+                logger.info(f"Expected: {file_size:,} bytes")
+                
+                # Critical check: If file is 0 bytes, something went wrong
+                if actual_size == 0:
+                    logger.error("DOWNLOAD FAILED: File is 0 bytes!")
+                    return None
+                
+            except subprocess.TimeoutExpired:
+                logger.error("Download timed out after 300 seconds")
+                return None
+            except Exception as e:
+                logger.error(f"Failed to execute PowerShell download script: {e}")
+                return None
+            finally:
+                # Clean up script
+                if os.path.exists(ps_script_path):
+                    try:
+                        os.remove(ps_script_path)
+                    except:
+                        pass
             
-            with open(download_path, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=chunk_size):
-                    if chunk:
-                        f.write(chunk)
-                        downloaded += len(chunk)
-                        if progress_callback:
-                            progress_callback(downloaded, file_size)
-            
-            logger.info(f"Download complete: {download_path}")
+            logger.info(f"Download saved to: {download_path}")
+            logger.info("=" * 60)
             return download_path
             
         except Exception as e:
-            logger.error(f"Download failed: {e}")
+            logger.error("=" * 60)
+            logger.error("DOWNLOAD FAILED")
+            logger.error(f"Error: {e}")
+            import traceback
+            logger.error(f"Traceback:\n{traceback.format_exc()}")
+            logger.error("=" * 60)
             return None
 
     def install_update_and_restart(self, zip_path: str) -> bool:
@@ -477,19 +553,51 @@ class UpdateManager:
         import zipfile
         
         try:
+            logger.info("=" * 60)
+            logger.info("STARTING UPDATE INSTALLATION PROCESS")
+            logger.info("=" * 60)
+            
             if not self.is_executable:
                 logger.warning("Cannot auto-update when running as Python script")
                 logger.info("Please manually download and run the update from GitHub")
                 return False
             
             current_exe = sys.executable
-            install_dir = os.path.dirname(current_exe)
+            logger.info(f"Current executable: {current_exe}")
+            
+            # Test mode support: Redirect installation to temp dir
+            if os.environ.get("AUTOLAUNCHER_TEST_MODE") == "1":
+                install_dir = os.path.join(tempfile.gettempdir(), "autolauncher_test_install")
+                os.makedirs(install_dir, exist_ok=True)
+                # Create a dummy exe to simulate the running app
+                current_exe = os.path.join(install_dir, "Autolauncher.exe")
+                if not os.path.exists(current_exe):
+                    with open(current_exe, 'w') as f:
+                        f.write("dummy executable content")
+                logger.info(f"TEST MODE: Redirected install to {install_dir}")
+            else:
+                install_dir = os.path.dirname(current_exe)
+                
             logger.info(f"Install directory: {install_dir}")
             logger.info(f"Update package: {zip_path}")
             
             # Verify ZIP file exists
             if not os.path.exists(zip_path):
                 logger.error(f"Update package not found: {zip_path}")
+                logger.error("INSTALLATION ABORTED: ZIP file does not exist")
+                return False
+            
+            logger.info(f"Update package size: {os.path.getsize(zip_path):,} bytes ({os.path.getsize(zip_path) / (1024*1024):.2f} MB)")
+            
+            # Verify ZIP is valid before extraction
+            try:
+                with zipfile.ZipFile(zip_path, 'r') as test_zip:
+                    zip_info = test_zip.infolist()
+                    logger.info(f"ZIP contains {len(zip_info)} files")
+                    logger.info(f"First few files: {[f.filename for f in zip_info[:5]]}")
+            except Exception as e:
+                logger.error(f"ZIP file is corrupted or invalid: {e}")
+                logger.error("INSTALLATION ABORTED: Invalid ZIP file")
                 return False
             
             # Extract ZIP to a temp folder
@@ -497,11 +605,25 @@ class UpdateManager:
             os.makedirs(temp_extract_dir, exist_ok=True)
             
             logger.info(f"Extracting update to {temp_extract_dir}...")
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall(temp_extract_dir)
+            try:
+                with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                    zip_ref.extractall(temp_extract_dir)
+                logger.info("Extraction complete")
+            except Exception as e:
+                logger.error(f"Failed to extract ZIP: {e}")
+                logger.error("INSTALLATION ABORTED: Extraction failed")
+                return False
                 
             # The zip contains a folder 'c4n-AutoLauncher' or 'Autolauncher', find it
             extracted_contents = os.listdir(temp_extract_dir)
+            logger.info(f"Extracted contents ({len(extracted_contents)} items):")
+            for item in extracted_contents:
+                item_path = os.path.join(temp_extract_dir, item)
+                if os.path.isdir(item_path):
+                    logger.info(f"  [DIR]  {item}/")
+                else:
+                    logger.info(f"  [FILE] {item}")
+            
             source_dir = None
             
             for item in extracted_contents:
@@ -513,15 +635,33 @@ class UpdateManager:
             if not source_dir:
                 # Fallback: use temp dir directly if no subfolder found
                 source_dir = temp_extract_dir
+                logger.warning("No autolauncher subfolder found, using extraction root")
             
             logger.info(f"Source directory for update: {source_dir}")
             
+            # List source directory contents
+            source_contents = os.listdir(source_dir)
+            logger.info(f"Source directory contents ({len(source_contents)} items):")
+            for item in source_contents[:20]:  # Show first 20 items
+                logger.info(f"  - {item}")
+            if len(source_contents) > 20:
+                logger.info(f"  ... and {len(source_contents) - 20} more items")
+            
             # Verify source directory has expected files
-            if not os.path.exists(os.path.join(source_dir, os.path.basename(current_exe))):
-                logger.error("Update package does not contain the application executable")
+            exe_name = os.path.basename(current_exe)
+            expected_exe = os.path.join(source_dir, exe_name)
+            
+            if not os.path.exists(expected_exe):
+                logger.error(f"Update package does not contain the application executable: {exe_name}")
+                logger.error(f"Expected at: {expected_exe}")
+                logger.error(f"Source dir contents: {os.listdir(source_dir)}")
+                logger.error("INSTALLATION ABORTED: Missing executable in update package")
                 return False
             
+            logger.info(f"Verified executable exists in update package: {exe_name}")
+            
             # Create a robust batch script with better error handling
+            logger.info("Creating update installer batch script...")
             batch_content = f"""@echo off
 echo ========================================
 echo   c4n-AutoLauncher Update Installer
@@ -531,7 +671,7 @@ echo Waiting for application to close...
 timeout /t 5 /nobreak >nul
 
 echo Ensuring old process is terminated...
-taskkill /F /IM Autolauncher.exe >nul 2>&1
+taskkill /F /IM {os.path.basename(current_exe)} >nul 2>&1
 timeout /t 3 /nobreak >nul
 
 echo Backing up current version...
@@ -568,28 +708,61 @@ exit
 """
             
             batch_path = os.path.join(install_dir, "_update_installer.bat")
-            with open(batch_path, 'w') as f:
-                f.write(batch_content)
+            logger.info(f"Writing batch script to: {batch_path}")
             
-            logger.info(f"Created update script: {batch_path}")
+            try:
+                with open(batch_path, 'w') as f:
+                    f.write(batch_content)
+            except Exception as e:
+                logger.error(f"Failed to create batch script: {e}")
+                logger.error(f"Target path: {batch_path}")
+                logger.error("INSTALLATION ABORTED: Could not create batch script")
+                return False
+            
+            # Verify batch script was created
+            if not os.path.exists(batch_path):
+                logger.error(f"Batch script not found after creation: {batch_path}")
+                logger.error("INSTALLATION ABORTED: Batch script verification failed")
+                return False
+                
+            logger.info(f"Batch script created successfully ({os.path.getsize(batch_path)} bytes)")
             logger.info("Starting update process...")
             
             # Start the batch file in a new console for visibility
-            subprocess.Popen(
-                batch_path,
-                creationflags=subprocess.CREATE_NEW_CONSOLE,
-                shell=True,
-                cwd=install_dir
-            )
-            
-            logger.info("Update installer launched successfully")
-            return True
+            try:
+                logger.info(f"Executing: {batch_path}")
+                logger.info(f"Working directory: {install_dir}")
+                
+                process = subprocess.Popen(
+                    batch_path,
+                    creationflags=subprocess.CREATE_NEW_CONSOLE,
+                    shell=True,
+                    cwd=install_dir
+                )
+                
+                logger.info(f"Update installer launched with PID: {process.pid}")
+                logger.info("Batch script will close this application in 5 seconds")
+                logger.info("Application will restart automatically after update installation")
+                logger.info("=" * 60)
+                return True
+                
+            except Exception as e:
+                logger.error(f"Failed to launch batch script: {e}")
+                import traceback
+                logger.error(f"Traceback:\n{traceback.format_exc()}")
+                logger.error("INSTALLATION ABORTED: Could not execute batch script")
+                return False
             
         except Exception as e:
-            logger.error(f"Update installation failed: {e}")
+            logger.error("=" * 60)
+            logger.error("UPDATE INSTALLATION FAILED")
+            logger.error(f"Error: {e}")
             import traceback
-            logger.error(traceback.format_exc())
+            logger.error(f"Traceback:\n{traceback.format_exc()}")
+            logger.error("=" * 60)
             return False
+
+
 
     def open_download_page(self, url: str):
         """Open the release page in the default browser."""

@@ -25,6 +25,12 @@ for asset_file in glob.glob('assets/**/*', recursive=True):
         # Source path, destination directory
         added_files.append((asset_file, os.path.dirname(asset_file)))
 
+# Add all translation files
+for translation_file in glob.glob('translations/**/*', recursive=True):
+    if os.path.isfile(translation_file):
+        # Source path, destination directory
+        added_files.append((translation_file, os.path.dirname(translation_file)))
+
 # NOTE: data/*.json files are NO LONGER bundled - user data now stored in AppData
 # The app will create tasks.json and settings.json in %APPDATA%\c4n-AutoLauncher\ on first run
 

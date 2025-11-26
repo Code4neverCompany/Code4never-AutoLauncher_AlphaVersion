@@ -1,14 +1,123 @@
 {
-    "version": "1.0.9",
-    "build_date": "2025-11-25",
+    "version": "1.1.0",
+    "release_date": "2025-11-26",
+    "description": "Official Beta Release - Wake/Sleep Features & Enhanced Process Tracking",
     "changelog": [
         {
-            "version": "1.0.9",
+            "version": "1.1.0",
+            "date": "2025-11-26",
+            "changes": [
+                "BETA RELEASE: Official Beta Launch!",
+                "FEATURE: Wake from Sleep - System wakes up automatically for scheduled tasks",
+                "FEATURE: Pre-wake Process - Configurable pre-wake duration (1-15 mins) to ensure system is ready",
+                "FEATURE: Smart Process Tracking - Tracks actual game/app processes, including shortcuts (.lnk) and launchers",
+                "FEATURE: Sleep after Completion - System sleeps only when the actual task finishes",
+                "UX: Double-click task row to edit",
+                "UX: Real-time clock display in Task Dialog"
+            ]
+        },
+        {
+            "version": "1.0.13l",
+            "date": "2025-11-26",
+            "changes": [
+                "TEST: Target release for verifying auto-update from v1.0.13k",
+                "INFO: If you are seeing this, the auto-update worked!"
+            ]
+        },
+        {
+            "version": "1.0.13k",
+            "date": "2025-11-26",
+            "changes": [
+                "FIX: Resolved NameError regression in update manager",
+                "FIX: Restored missing PowerShell download logic",
+                "TEST: Final verification release for auto-update flow"
+            ]
+        },
+        {
+            "version": "1.0.13j",
+            "date": "2025-11-26",
+            "changes": [
+                "TEST: Target release for verifying auto-update from v1.0.13i",
+                "INFO: If you are seeing this, the auto-update worked!"
+            ]
+        },
+        {
+            "version": "1.0.13i",
+            "date": "2025-11-26",
+            "changes": [
+                "FIX: Implemented robust PowerShell script-based download mechanism",
+                "FIX: Resolved syntax error in update manager",
+                "TEST: Final verification release for auto-update flow"
+            ]
+        },
+        {
+            "version": "1.0.13h",
+            "date": "2025-11-26",
+            "changes": [
+                "TEST: Final verification release for PowerShell update engine",
+                "FIX: Confirmed robust download capability via Invoke-WebRequest"
+            ]
+        },
+        {
+            "version": "1.0.13g",
+            "date": "2025-11-26",
+            "changes": [
+                "FIX: Replaced Python downloader with robust Windows PowerShell downloader",
+                "FIX: Solves persistent 0-byte download issues by using OS native networking",
+                "FIX: Improved handling of SSL, redirects, and proxies"
+            ]
+        },
+        {
+            "version": "1.0.13f",
+            "date": "2025-11-26",
+            "changes": [
+                "TEST: Verification release to confirm auto-update functionality",
+                "FIX: Confirmed fix for 0-byte downloads",
+                "FIX: Confirmed fix for startup crashes"
+            ]
+        },
+        {
+            "version": "1.0.13e",
+            "date": "2025-11-26",
+            "changes": [
+                "FIX: Resolved application crash on startup due to missing UI method",
+                "FIX: File logging now enabled in production builds (was DEBUG-only)",
+                "FIX: Logs directory button now points to correct location"
+            ]
+        },
+        {
+            "version": "1.0.13c",
+            "date": "2025-11-26",
+            "changes": [
+                "FIX: Application now properly loads saved language preference on startup",
+                "FIX: Eliminated mixed language text on first launch"
+            ]
+        },
+        {
+            "version": "1.0.13b",
+            "date": "2025-11-26",
+            "changes": [
+                "FIX: Auto-update downloads now properly follow GitHub CDN redirects",
+                "FIX: Added comprehensive download logging with progress tracking",
+                "FIX: Enhanced error detection for 0-byte file downloads",
+                "FIX: Added ZIP file validation before installation"
+            ]
+        },
+        {
+            "version": "1.0.13a",
             "date": "2025-11-25",
             "changes": [
-                "FIX: Restored auto-update detection and notification system",
-                "FIX: Update installation reliability improvements (process termination + extended wait)",
-                "FEATURE: Smart Auto-Update logic - postpones installation if tasks scheduled within 30 minutes"
+                "FIX: Corrected translation JSON structure - separated 'about' section from 'dialog'",
+                "FIX: Fixed translation key prefixes in task_card.py"
+            ]
+        },
+        {
+            "version": "1.0.13",
+            "date": "2025-11-25",
+            "changes": [
+                "FEATURE: Bilingual Support - English and German with dynamic language switching",
+                "FEATURE: Comprehensive translations for all UI elements, dialogs, and messages",
+                "UPDATE: Refactored UI components to support dynamic text reloading"
             ]
         }
     ]

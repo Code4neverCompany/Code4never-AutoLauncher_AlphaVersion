@@ -29,6 +29,7 @@ from qfluentwidgets import (
 )
 from update_manager import UpdateManager
 from logger import get_logger
+from language_manager import get_text
 
 logger = get_logger(__name__)
 
@@ -422,6 +423,18 @@ class UpdateDashboard(CardWidget):
         """Show the FAQ dialog."""
         show_faq_dialog(self)
 
+    def reload_ui_text(self):
+        """Reload UI text."""
+        self.appNameLabel.setText(get_text('main_window.title'))
+        self.checkBtn.setText(get_text('about.check_update'))
+        self.logsBtn.setText(get_text('main_window.view_log'))
+        self.sourceLabel.setText(get_text('about.update_source'))
+        self.currentVerLabel.setText(get_text('about.latest_available'))
+        self.targetVerLabel.setText(get_text('about.install_version'))
+        
+        if not self.updateBtn.isEnabled():
+             self.updateBtn.setText(get_text('about.update'))
+
 
 class AboutInterface(ScrollArea):
     """
@@ -607,4 +620,14 @@ class AboutInterface(ScrollArea):
             duration=5000,
             parent=self
         )
+
+    def reload_ui_text(self):
+        """Reload UI text when language changes."""
+        # Reload dashboard text
+        if hasattr(self, 'dashboard'):
+            self.dashboard.reload_ui_text()
+        
+        # Reload footer text
+        if hasattr(self, 'footerLabel'):
+            self.footerLabel.setText(get_text('about.footer_text'))
 

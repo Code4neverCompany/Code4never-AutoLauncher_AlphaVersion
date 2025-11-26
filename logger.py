@@ -57,8 +57,8 @@ def setup_logger(name: str = "Autolauncher") -> logging.Logger:
     
     logger.addHandler(console_handler)
     
-    # File Handler - Only enabled in DEBUG mode
-    if DEBUG_MODE:
+    # File Handler - Always enabled (CRITICAL for production diagnostics)
+    if True:  # Changed from DEBUG_MODE to always enable logging
         try:
             file_handler = RotatingFileHandler(
                 LOG_FILE,
